@@ -3,6 +3,12 @@ import sys
 import torch
 from transformers import AutoTokenizer
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Add project root and models to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from models.gpt import GPT, GPTConfig
@@ -118,8 +124,10 @@ def verify_gpt_model():
     with torch.amp.autocast(device_type=device, dtype=amp_dtype):
         gen_tokens = model.generate(prompt_tokens, max_new_tokens=25, temperature=0.8, top_k=40)
 
-    generated_text = tokenizer.decode(gen_tokens[0].tolist())
-    print(f"  Model Output (untrained random init):\n  \"{generated_text}\"")
+    generated_text = tokenizer.decode(gen_tokens[0].tolist(), errors="replace")
+    enc = sys.stdout.encoding or "utf-8"
+    safe_display = generated_text.encode(enc, errors="replace").decode(enc, errors="replace")
+    print(f"  Model Output (untrained random init):\n  \"{safe_display}\"")
 
     print("\n" + "=" * 65)
     print(" ALL VERIFICATION TESTS PASSED SUCCESSFULLY!")
