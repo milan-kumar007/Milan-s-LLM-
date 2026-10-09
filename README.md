@@ -119,8 +119,8 @@ Clone the repository and set up a clean Python virtual environment:
 
 ```bash
 # Clone the repository
-git clone https://github.com/milan/milans-llm.git
-cd milans-llm
+git clone https://github.com/milan-kumar007/Milan-s-LLM-.git
+cd Milan-s-LLM-
 
 # Create a virtual environment
 python -m venv .venv

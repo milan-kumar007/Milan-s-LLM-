@@ -14,7 +14,7 @@ This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDU
 
 ### 1. Reporting Bugs
 If you encounter a bug:
-1. Search the [Issues](https://github.com/milan/milans-llm/issues) tab to see if it has already been reported.
+1. Search the [Issues](https://github.com/milan-kumar007/Milan-s-LLM-/issues) tab to see if it has already been reported.
 2. If not, open a new issue with:
    - A clear and descriptive title.
    - Exact steps to reproduce the issue.
@@ -31,8 +31,8 @@ Feature requests and optimizations are very welcome!
 
 #### Step 1: Fork and Clone
 ```bash
-git clone https://github.com/YOUR_USERNAME/milans-llm.git
-cd milans-llm
+git clone https://github.com/YOUR_USERNAME/Milan-s-LLM-.git
+cd Milan-s-LLM-
 ```
 
 #### Step 2: Set Up Development Environment

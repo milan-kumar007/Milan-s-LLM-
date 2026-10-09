@@ -55,6 +55,6 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/milan/milans-llm"
-"Repository" = "https://github.com/milan/milans-llm"
-"Bug Tracker" = "https://github.com/milan/milans-llm/issues"
+"Homepage" = "https://github.com/milan-kumar007/Milan-s-LLM-"
+"Repository" = "https://github.com/milan-kumar007/Milan-s-LLM-"
+"Bug Tracker" = "https://github.com/milan-kumar007/Milan-s-LLM-/issues"
