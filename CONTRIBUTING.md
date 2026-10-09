@@ -1,6 +1,6 @@
-# Contributing to Custom LLM
+# Contributing to Milan's LLM
 
-First off, thank you for considering contributing to **Custom LLM**! Open-source thrives on community contributions, whether it's reporting a bug, improving documentation, submitting optimizations, or adding new features.
+First off, thank you for considering contributing to **Milan's LLM**! Open-source thrives on community contributions, whether it's reporting a bug, improving documentation, submitting optimizations, or adding new features.
 
 ---
 
@@ -14,7 +14,7 @@ This project adheres to the Contributor Covenant [Code of Conduct](CODE_OF_CONDU
 
 ### 1. Reporting Bugs
 If you encounter a bug:
-1. Search the [Issues](https://github.com/milan/custom-llm/issues) tab to see if it has already been reported.
+1. Search the [Issues](https://github.com/milan/milans-llm/issues) tab to see if it has already been reported.
 2. If not, open a new issue with:
    - A clear and descriptive title.
    - Exact steps to reproduce the issue.
@@ -31,8 +31,8 @@ Feature requests and optimizations are very welcome!
 
 #### Step 1: Fork and Clone
 ```bash
-git clone https://github.com/YOUR_USERNAME/custom-llm.git
-cd custom-llm
+git clone https://github.com/YOUR_USERNAME/milans-llm.git
+cd milans-llm
 ```
 
 #### Step 2: Set Up Development Environment

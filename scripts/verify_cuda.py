@@ -2,7 +2,7 @@ import sys
 
 def check_environment():
     print("=" * 60)
-    print(" CUDA & Environment Verification for Custom LLM Training")
+    print(" CUDA & Environment Verification for Milan's LLM Training")
     print("=" * 60)
     print(f"Python Executable : {sys.executable}")
     print(f"Python Version    : {sys.version.split()[0]}")

@@ -365,3 +365,6 @@ class GPT(nn.Module):
         print(f"Loaded {len(sd_hf_keys)} weight tensors into custom {model_type} architecture!")
         return model
 
+
+# Class alias for Milan's LLM
+MilansLLM = GPT

@@ -2,7 +2,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
 Set-Location $ScriptDir
 
 Write-Host "========================================================" -ForegroundColor Cyan
-Write-Host " Launching Custom GPT Desktop GUI on NVIDIA GPU..." -ForegroundColor Cyan
+Write-Host " Launching Milan's LLM Desktop GUI on NVIDIA GPU..." -ForegroundColor Cyan
 Write-Host "========================================================" -ForegroundColor Cyan
 
 $PythonExe = Join-Path $ScriptDir ".venv\Scripts\python.exe"

@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "custom-llm"
+name = "milans-llm"
 version = "0.1.0"
-description = "A 124M-parameter GPT language model built from scratch in PyTorch with CUDA acceleration, Supervised Fine-Tuning (SFT), and an interactive streaming desktop GUI."
+description = "Milan's LLM: A 124M-parameter GPT transformer built from scratch in PyTorch with CUDA acceleration, Supervised Fine-Tuning (SFT), and an interactive streaming desktop GUI."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -55,6 +55,6 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/milan/custom-llm"
-"Repository" = "https://github.com/milan/custom-llm"
-"Bug Tracker" = "https://github.com/milan/custom-llm/issues"
+"Homepage" = "https://github.com/milan/milans-llm"
+"Repository" = "https://github.com/milan/milans-llm"
+"Bug Tracker" = "https://github.com/milan/milans-llm/issues"

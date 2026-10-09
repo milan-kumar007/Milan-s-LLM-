@@ -19,7 +19,7 @@ class GPTPlaygroundApp(tk.Tk):
     def __init__(self):
         super().__init__()
 
-        self.title("Custom GPT-2 (124M) Model Playground - GPU Accelerated")
+        self.title("Milan's LLM (124M) Playground - GPU Accelerated")
         self.geometry("1060x780")
         self.minsize(850, 650)
 
@@ -68,7 +68,7 @@ class GPTPlaygroundApp(tk.Tk):
 
         title_lbl = tk.Label(
             header_frame,
-            text=" ⚡ Custom GPT Transformer Playground (124M)",
+            text=" 🧠 Milan's LLM Playground (124M)",
             font=("Segoe UI", 13, "bold"),
             bg="#1e293b",
             fg="#f8fafc"

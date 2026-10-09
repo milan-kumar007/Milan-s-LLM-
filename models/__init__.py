@@ -1,3 +1,3 @@
-from .gpt import GPT, GPTConfig
+from .gpt import GPT, GPTConfig, MilansLLM
 
-__all__ = ["GPT", "GPTConfig"]
+__all__ = ["GPT", "GPTConfig", "MilansLLM"]

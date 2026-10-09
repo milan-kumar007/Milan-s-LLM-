@@ -1,4 +1,4 @@
-# 🧠 Custom LLM: 124M Transformer Built from Scratch
+# 🧠 Milan's LLM: 124M Transformer Built from Scratch
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-brightgreen.svg)](https://www.python.org/)
@@ -66,7 +66,7 @@ This repository provides everything needed to understand, train, fine-tune, and 
 ## 📁 Repository Structure
 
 ```text
-custom-llm/
+milans-llm/
 ├── data/
 │   ├── raw/                 # Downloaded raw text corpora (.gitkeep)
 │   └── processed/           # Tokenized binary tensors (tokens.pt, sft_train.pt, metadata.json)
@@ -119,8 +119,8 @@ Clone the repository and set up a clean Python virtual environment:
 
 ```bash
 # Clone the repository
-git clone https://github.com/milan/custom-llm.git
-cd custom-llm
+git clone https://github.com/milan/milans-llm.git
+cd milans-llm
 
 # Create a virtual environment
 python -m venv .venv

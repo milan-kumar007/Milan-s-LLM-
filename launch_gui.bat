@@ -1,10 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Custom GPT Desktop Playground
+title Milan's LLM Desktop Playground
 
 echo ========================================================
-echo  Launching Custom GPT Desktop GUI on NVIDIA GPU...
+echo  Launching Milan's LLM Desktop GUI on NVIDIA GPU...
 echo ========================================================
 
 if not exist "%~dp0.venv\Scripts\python.exe" goto :no_venv

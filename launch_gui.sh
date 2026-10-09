@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Launch script for Custom GPT Desktop Playground on Linux/macOS
+# Launch script for Milan's LLM Desktop Playground on Linux/macOS
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
 echo "========================================================"
-echo " Launching Custom GPT Desktop Playground..."
+echo " Launching Milan's LLM Desktop Playground..."
 echo "========================================================"
 
 PYTHON_EXEC=""
