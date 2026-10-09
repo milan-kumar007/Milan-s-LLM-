@@ -246,28 +246,48 @@ class GPT(nn.Module):
         self,
         input_ids: torch.Tensor,
         max_new_tokens: int = 50,
-        temperature: float = 0.8,
-        top_k: int | None = 40
+        temperature: float = 0.0,
+        top_k: int | None = 40,
+        top_p: float | None = None
     ) -> torch.Tensor:
         """
-        Autoregressive text generation using temperature and top-k filtering.
+        Autoregressive text generation using temperature, top-k, and top-p filtering.
+        Defaults to deterministic greedy decoding (temperature <= 0.05 or top_k == 1)
+        for reliable, zero-hallucination outputs.
         """
         self.eval()
         for _ in range(max_new_tokens):
             # Crop to context window if needed
             idx_cond = input_ids if input_ids.size(1) <= self.config.block_size else input_ids[:, -self.config.block_size:]
-            
+
             logits, _ = self(idx_cond)
             # Take logits for the last token position
-            logits = logits[:, -1, :] / temperature
+            next_logits = logits[:, -1, :]
 
-            # Top-k filtering
-            if top_k is not None:
-                v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
-                logits[logits < v[:, [-1]]] = -float("Inf")
+            # Greedy decoding (deterministic - eliminates random hallucinations)
+            if temperature <= 0.05 or (top_k is not None and top_k == 1):
+                next_token = torch.argmax(next_logits, dim=-1, keepdim=True)
+            else:
+                next_logits = next_logits / max(1e-4, temperature)
 
-            probs = F.softmax(logits, dim=-1)
-            next_token = torch.multinomial(probs, num_samples=1)
+                # Top-k filtering
+                if top_k is not None and top_k > 0:
+                    v, _ = torch.topk(next_logits, min(top_k, next_logits.size(-1)))
+                    next_logits[next_logits < v[:, [-1]]] = -float("Inf")
+
+                # Top-p (nucleus) filtering
+                if top_p is not None and top_p < 1.0:
+                    sorted_logits, sorted_indices = torch.sort(next_logits, descending=True)
+                    cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
+                    sorted_mask = cumulative_probs > top_p
+                    sorted_mask[..., 1:] = sorted_mask[..., :-1].clone()
+                    sorted_mask[..., 0] = False
+                    mask = sorted_mask.scatter(1, sorted_indices, sorted_mask)
+                    next_logits[mask] = -float("Inf")
+
+                probs = F.softmax(next_logits, dim=-1)
+                next_token = torch.multinomial(probs, num_samples=1)
+
             input_ids = torch.cat((input_ids, next_token), dim=1)
 
         return input_ids

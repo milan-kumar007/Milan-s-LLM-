@@ -58,37 +58,43 @@ def load_model(
 def sample_next_token(
     logits: torch.Tensor,
     context_tokens: list[int],
-    temperature: float = 0.8,
+    temperature: float = 0.2,
     top_k: int = 40,
     top_p: float = 0.9,
-    repetition_penalty: float = 1.1
+    repetition_penalty: float = 1.05,
+    prompt_len: int = 0
 ) -> int:
     """
-    Applies temperature, repetition penalty, top-k, and top-p (nucleus) filtering,
-    then samples the next token ID.
+    Applies repetition penalty, temperature, top-k, and top-p (nucleus) filtering.
+    Defaults to deterministic greedy decoding when temperature <= 0.05 or top_k == 1.
     """
     logits = logits.clone()
 
-    # 1. Repetition penalty
-    if repetition_penalty != 1.0 and len(context_tokens) > 0:
-        seen = set(context_tokens)
-        for token_id in seen:
+    # 1. Repetition penalty (applied strictly to generated tokens, NEVER prompt words)
+    if repetition_penalty != 1.0 and len(context_tokens) > prompt_len:
+        gen_tokens = context_tokens[prompt_len:]
+        recent_window = gen_tokens[-64:] if len(gen_tokens) > 64 else gen_tokens
+        for token_id in set(recent_window):
             if logits[0, token_id] > 0:
                 logits[0, token_id] /= repetition_penalty
             else:
                 logits[0, token_id] *= repetition_penalty
 
-    # 2. Temperature scaling
+    # 2. Pure deterministic greedy decoding (zero-hallucination argmax)
+    if temperature <= 0.05 or top_k == 1:
+        return torch.argmax(logits, dim=-1).item()
+
+    # 3. Temperature scaling
     temperature = max(1e-4, temperature)
     logits = logits / temperature
 
-    # 3. Top-K filtering
+    # 4. Top-K filtering
     if top_k > 0:
         top_k = min(top_k, logits.size(-1))
         val, _ = torch.topk(logits, top_k)
         logits[logits < val[:, [-1]]] = -float("Inf")
 
-    # 4. Top-P (Nucleus) filtering
+    # 5. Top-P (Nucleus) filtering
     if top_p < 1.0:
         sorted_logits, sorted_indices = torch.sort(logits, descending=True)
         cumulative_probs = torch.cumsum(F.softmax(sorted_logits, dim=-1), dim=-1)
@@ -97,12 +103,12 @@ def sample_next_token(
         sorted_indices_to_remove = cumulative_probs > top_p
         # Shift right to keep the first token exceeding threshold
         sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-        sorted_indices_to_remove[..., 0] = 0
+        sorted_indices_to_remove[..., 0] = False
 
         indices_to_remove = sorted_indices_to_remove.scatter(1, sorted_indices, sorted_indices_to_remove)
         logits[indices_to_remove] = -float("Inf")
 
-    # 5. Softmax & Categorical Sampling
+    # 6. Softmax & Categorical Sampling
     probs = F.softmax(logits, dim=-1)
     next_token = torch.multinomial(probs, num_samples=1)
     return next_token.item()
@@ -114,10 +120,10 @@ def generate_stream(
     tokenizer: AutoTokenizer,
     prompt: str,
     max_new_tokens: int = 100,
-    temperature: float = 0.8,
+    temperature: float = 0.2,
     top_k: int = 40,
     top_p: float = 0.9,
-    repetition_penalty: float = 1.1,
+    repetition_penalty: float = 1.05,
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 ) -> Generator[str, None, None]:
     """
@@ -129,6 +135,7 @@ def generate_stream(
         encoded = [tokenizer.eos_token_id]
 
     tokens = list(encoded)
+    prompt_len = len(tokens)
     input_tensor = torch.tensor([tokens], dtype=torch.long, device=device)
 
     eos_token_id = tokenizer.eos_token_id
@@ -154,7 +161,8 @@ def generate_stream(
             temperature=temperature,
             top_k=top_k,
             top_p=top_p,
-            repetition_penalty=repetition_penalty
+            repetition_penalty=repetition_penalty,
+            prompt_len=prompt_len
         )
 
         # Stop if end-of-text token is produced
@@ -185,13 +193,19 @@ if __name__ == "__main__":
     parser.add_argument("--prompt", type=str, default="Write an email to my class teacher asking for leave.", help="Initial prompt")
     parser.add_argument("--checkpoint", type=str, default="models/checkpoints/sft_best_model.pt", help="Checkpoint path")
     parser.add_argument("--instruct", action="store_true", default=True, help="Format prompt as instruction")
+    parser.add_argument("--no-instruct", dest="instruct", action="store_false", help="Do not format prompt as instruction")
+    parser.add_argument("--greedy", action="store_true", help="Use deterministic greedy decoding (zero hallucination)")
     parser.add_argument("--max_tokens", type=int, default=120, help="Maximum new tokens to generate")
-    parser.add_argument("--temp", type=float, default=0.7, help="Temperature (0.1 to 2.0)")
+    parser.add_argument("--temp", type=float, default=0.2, help="Temperature (0.0 to 2.0, where 0.0 is greedy)")
     parser.add_argument("--top_k", type=int, default=40, help="Top-K sampling cutoff")
     parser.add_argument("--top_p", type=float, default=0.9, help="Top-P nucleus sampling threshold")
-    parser.add_argument("--rep_penalty", type=float, default=1.1, help="Repetition penalty factor")
+    parser.add_argument("--rep_penalty", type=float, default=1.05, help="Repetition penalty factor")
 
     args = parser.parse_args()
+
+    # If greedy requested, override temperature to 0.0
+    effective_temp = 0.0 if args.greedy else args.temp
+    effective_top_k = 1 if args.greedy else args.top_k
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     mdl, tok, meta = load_model(args.checkpoint, device=dev)
@@ -209,8 +223,8 @@ if __name__ == "__main__":
     for chunk in generate_stream(
         mdl, tok, prompt_text,
         max_new_tokens=args.max_tokens,
-        temperature=args.temp,
-        top_k=args.top_k,
+        temperature=effective_temp,
+        top_k=effective_top_k,
         top_p=args.top_p,
         repetition_penalty=args.rep_penalty,
         device=dev

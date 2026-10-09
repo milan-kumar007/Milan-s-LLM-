@@ -31,6 +31,7 @@ class GPTPlaygroundApp(tk.Tk):
         self.is_generating = False
         self.stop_requested = threading.Event()
         self.stream_queue = queue.Queue()
+        self.val_lbls = {}
 
         # UI Styling
         self.style = ttk.Style(self)
@@ -144,61 +145,86 @@ class GPTPlaygroundApp(tk.Tk):
 
         # Sampling Parameters Section
         lbl_params = tk.Label(parent, text="SAMPLING PARAMETERS", font=("Segoe UI", 9, "bold"), bg="#ffffff", fg="#64748b")
-        lbl_params.pack(anchor="w", padx=pad_x, pady=(6, 8))
+        lbl_params.pack(anchor="w", padx=pad_x, pady=(6, 4))
+
+        # Decoding Strategy Dropdown
+        lbl_mode = tk.Label(parent, text="Decoding Strategy", font=("Segoe UI", 9, "bold"), bg="#ffffff", fg="#334155")
+        lbl_mode.pack(anchor="w", padx=pad_x, pady=(2, 2))
+
+        self.decoding_modes = {
+            "🎯 Precise (Greedy - Zero Hallucination)": {"temp": 0.0, "top_k": 1, "top_p": 1.0, "rep_pen": 1.0},
+            "💡 Factual Q&A (Recommended)": {"temp": 0.2, "top_k": 20, "top_p": 0.85, "rep_pen": 1.05},
+            "⚖️ Balanced Assistant": {"temp": 0.5, "top_k": 30, "top_p": 0.9, "rep_pen": 1.1},
+            "🎨 Creative / Storytelling": {"temp": 0.8, "top_k": 50, "top_p": 0.95, "rep_pen": 1.15}
+        }
+        self.combo_mode = ttk.Combobox(
+            parent,
+            values=list(self.decoding_modes.keys()),
+            state="readonly",
+            font=("Segoe UI", 8)
+        )
+        self.combo_mode.set("🎯 Precise (Greedy - Zero Hallucination)")
+        self.combo_mode.pack(fill="x", padx=pad_x, pady=(0, 6))
+        self.combo_mode.bind("<<ComboboxSelected>>", self._on_decoding_mode_changed)
 
         # Temperature
-        self.temp_var = tk.DoubleVar(value=0.8)
+        self.temp_var = tk.DoubleVar(value=0.0)
         self._create_slider_control(
             parent,
             title="Temperature",
             var=self.temp_var,
-            from_=0.1, to_=1.8, resolution=0.05,
+            from_=0.0, to_=1.8, resolution=0.05,
             format_str="{:.2f}",
-            tooltip="Higher = more creative, Lower = more deterministic"
+            tooltip="0.0 = Pure Greedy (deterministic). Higher = more random",
+            key="temp"
         )
 
         # Top-K
-        self.top_k_var = tk.IntVar(value=40)
+        self.top_k_var = tk.IntVar(value=1)
         self._create_slider_control(
             parent,
             title="Top-K Sampling",
             var=self.top_k_var,
-            from_=0, to_=100, resolution=1,
+            from_=1, to_=100, resolution=1,
             format_str="{:d}",
-            tooltip="Number of top probability tokens to sample from (0 = disabled)"
+            tooltip="Top token cutoff (1 = Argmax / Greedy)",
+            key="top_k"
         )
 
         # Top-P (Nucleus)
-        self.top_p_var = tk.DoubleVar(value=0.9)
+        self.top_p_var = tk.DoubleVar(value=1.0)
         self._create_slider_control(
             parent,
             title="Top-P (Nucleus)",
             var=self.top_p_var,
             from_=0.1, to_=1.0, resolution=0.05,
             format_str="{:.2f}",
-            tooltip="Cumulative probability threshold (1.0 = disabled)"
+            tooltip="Cumulative probability threshold (1.0 = disabled)",
+            key="top_p"
         )
 
         # Repetition Penalty
-        self.rep_pen_var = tk.DoubleVar(value=1.1)
+        self.rep_pen_var = tk.DoubleVar(value=1.0)
         self._create_slider_control(
             parent,
             title="Repetition Penalty",
             var=self.rep_pen_var,
             from_=1.0, to_=2.0, resolution=0.05,
             format_str="{:.2f}",
-            tooltip="Penalizes repeated tokens (1.0 = none)"
+            tooltip="Penalizes recently generated tokens (1.0 = none)",
+            key="rep_pen"
         )
 
         # Max New Tokens
-        self.max_tokens_var = tk.IntVar(value=100)
+        self.max_tokens_var = tk.IntVar(value=120)
         self._create_slider_control(
             parent,
             title="Max New Tokens",
             var=self.max_tokens_var,
             from_=10, to_=400, resolution=10,
             format_str="{:d}",
-            tooltip="Maximum length of newly generated tokens"
+            tooltip="Maximum length of newly generated tokens",
+            key="max_tokens"
         )
 
         # Instruction / Chat Mode Toggle
@@ -219,6 +245,7 @@ class GPTPlaygroundApp(tk.Tk):
             "What does a GPU do?",
             "What is the difference between a CPU and a GPU?",
             "Explain what an algorithm is.",
+            "What is machine learning?",
             "Give three tips for staying healthy.",
             "Write a Python function to check if a number is prime."
         ]
@@ -226,7 +253,25 @@ class GPTPlaygroundApp(tk.Tk):
         self.combo_presets.pack(fill="x", padx=pad_x, pady=2)
         self.combo_presets.bind("<<ComboboxSelected>>", self._on_preset_selected)
 
-    def _create_slider_control(self, parent, title, var, from_, to_, resolution, format_str, tooltip=""):
+    def _on_decoding_mode_changed(self, event=None):
+        mode = self.combo_mode.get()
+        if mode in self.decoding_modes:
+            cfg = self.decoding_modes[mode]
+            self.temp_var.set(cfg["temp"])
+            self.top_k_var.set(cfg["top_k"])
+            self.top_p_var.set(cfg["top_p"])
+            self.rep_pen_var.set(cfg["rep_pen"])
+            if hasattr(self, "val_lbls"):
+                if "temp" in self.val_lbls:
+                    self.val_lbls["temp"].config(text="0.00 (Greedy)" if cfg["temp"] <= 0.05 else f"{cfg['temp']:.2f}")
+                if "top_k" in self.val_lbls:
+                    self.val_lbls["top_k"].config(text="1 (Argmax)" if cfg["top_k"] == 1 else f"{cfg['top_k']:d}")
+                if "top_p" in self.val_lbls:
+                    self.val_lbls["top_p"].config(text=f"{cfg['top_p']:.2f}")
+                if "rep_pen" in self.val_lbls:
+                    self.val_lbls["rep_pen"].config(text=f"{cfg['rep_pen']:.2f}")
+
+    def _create_slider_control(self, parent, title, var, from_, to_, resolution, format_str, tooltip="", key=""):
         frame = tk.Frame(parent, bg="#ffffff")
         frame.pack(fill="x", padx=14, pady=3)
 
@@ -236,11 +281,27 @@ class GPTPlaygroundApp(tk.Tk):
         lbl = tk.Label(top_row, text=title, font=("Segoe UI", 9), bg="#ffffff", fg="#334155")
         lbl.pack(side="left")
 
-        val_lbl = tk.Label(top_row, text=format_str.format(var.get()), font=("Segoe UI", 9, "bold"), bg="#ffffff", fg="#0284c7")
+        val_init = var.get()
+        if key == "temp" and val_init <= 0.05:
+            display_txt = "0.00 (Greedy)"
+        elif key == "top_k" and val_init == 1:
+            display_txt = "1 (Argmax)"
+        else:
+            display_txt = format_str.format(val_init)
+
+        val_lbl = tk.Label(top_row, text=display_txt, font=("Segoe UI", 9, "bold"), bg="#ffffff", fg="#0284c7")
         val_lbl.pack(side="right")
+        if hasattr(self, "val_lbls") and key:
+            self.val_lbls[key] = val_lbl
 
         def on_change(val):
-            formatted = format_str.format(var.get())
+            curr = var.get()
+            if key == "temp" and curr <= 0.05:
+                formatted = "0.00 (Greedy)"
+            elif key == "top_k" and int(curr) == 1:
+                formatted = "1 (Argmax)"
+            else:
+                formatted = format_str.format(curr)
             val_lbl.config(text=formatted)
 
         scale = ttk.Scale(
@@ -358,6 +419,8 @@ class GPTPlaygroundApp(tk.Tk):
     def _on_checkpoint_selected(self, event=None):
         selected = self.combo_ckpt.get()
         if selected and selected != "No checkpoints found":
+            if "sft" in selected.lower():
+                self.instruct_mode_var.set(True)
             path = os.path.join("models/checkpoints", selected)
             self._load_model_threaded(path)
 
@@ -470,6 +533,7 @@ class GPTPlaygroundApp(tk.Tk):
             encoded = [tokenizer.eos_token_id]
 
         tokens = list(encoded)
+        prompt_len = len(tokens)
         input_tensor = torch.tensor([tokens], dtype=torch.long, device=device)
         eos_id = tokenizer.eos_token_id
 
@@ -500,7 +564,8 @@ class GPTPlaygroundApp(tk.Tk):
                 temperature=params["temperature"],
                 top_k=params["top_k"],
                 top_p=params["top_p"],
-                repetition_penalty=params["repetition_penalty"]
+                repetition_penalty=params["repetition_penalty"],
+                prompt_len=prompt_len
             )
 
             if next_token_id == eos_id:
