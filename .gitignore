@@ -1,0 +1,49 @@
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Model checkpoints & large binary weights (>100MB)
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+
+# Raw and preprocessed dataset binaries
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+*.parquet
+*.arrow
+*.jsonl
+*.csv
+
+# Logs, Profilers & Experiments
+logs/
+wandb/
+runs/
+*.log
+.ipynb_checkpoints/
+
+# Operating System & IDE artifacts
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
